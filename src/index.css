@@ -1,0 +1,250 @@
+:root {
+  --bg: #fafafa;
+  --card-bg: #ffffff;
+  --border: #eeeeee;
+  --text: #222222;
+  --text-sub: #666666;
+  --text-faint: #999999;
+  --danger: #e53935;
+  --accent-default: #4caf50;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  position: relative;
+}
+
+.app-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+}
+
+.muted {
+  color: var(--text-faint);
+}
+
+/* ---- 下部タブバー ---- */
+.tabbar {
+  display: flex;
+  border-top: 1px solid var(--border);
+  background: #fff;
+  padding: 6px 0 4px;
+}
+.tabbar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: #999;
+  font-size: 11px;
+}
+.tabbar-item.active {
+  color: var(--tab-color, var(--accent-default));
+}
+.tabbar-icon {
+  font-size: 22px;
+}
+.tabbar-fab {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 26px;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+/* ---- 上部ヘッダー（フォーム画面） ---- */
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+}
+.header-title {
+  font-size: 16px;
+  font-weight: 700;
+  flex: 1;
+  text-align: center;
+  margin: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header-cancel {
+  font-size: 15px;
+  color: #666;
+}
+.header-save {
+  font-size: 16px;
+  font-weight: 700;
+}
+.header-save:disabled {
+  opacity: 0.5;
+}
+
+.screen {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.screen-pad {
+  padding: 20px;
+  padding-bottom: 60px;
+}
+
+/* ---- カード・入力欄など汎用パーツ ---- */
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 12px;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 16px 0 6px;
+  color: #333;
+}
+.field-required {
+  color: var(--danger);
+}
+
+.text-input {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 16px;
+  background: #fff;
+  color: #222;
+}
+.text-input:focus {
+  outline: 2px solid #90caf9;
+}
+textarea.text-input {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  padding: 8px 14px;
+  background: #fff;
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+}
+.chip.active {
+  color: #fff;
+  font-weight: 600;
+  border-color: transparent;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  width: 100%;
+}
+.btn:disabled {
+  opacity: 0.6;
+}
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--accent-default);
+  color: var(--accent-default);
+}
+.btn-secondary {
+  background: #eee;
+  color: #333;
+}
+
+.link {
+  color: #1976d2;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* スクロールバーを目立たなくする（横スクロール領域向け） */
+.hscroll {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.hscroll::-webkit-scrollbar {
+  display: none;
+}
