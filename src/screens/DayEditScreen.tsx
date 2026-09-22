@@ -57,9 +57,10 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 日付が変わったら、その日付の記録項目を読み直す（写真と同じ挙動に揃える）
   useEffect(() => {
     (async () => {
-      const rows = await getRecordsByDate(petId, initialDate);
+      const rows = await getRecordsByDate(petId, date);
       setItems(
         rows.map((r) => ({
           key: r.id,
@@ -70,9 +71,10 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
           unit: r.unit ?? unitOf(r.category),
         }))
       );
+      setRemovedIds([]);
       setLoading(false);
     })();
-  }, [petId, initialDate]);
+  }, [petId, date]);
 
   async function reloadPhotos() {
     setPhotos(await getPhotosByDate(petId, date));
@@ -321,23 +323,26 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
               onChange={(e) => setTranscript(e.target.value)}
               placeholder="ここに入力（マイクで話してもOK）"
             />
+          </div>
+
+          {/* 「AIで振り分け」と「項目を追加」を横並びに */}
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
             <button
               className="btn"
-              style={{ marginTop: 14, background: color, opacity: analyzing ? 0.6 : 1 }}
+              style={{ flex: 1, background: color, opacity: analyzing ? 0.6 : 1 }}
               onClick={analyzeAndAppend}
               disabled={analyzing}
             >
               {analyzing ? '解析中…' : '✨ AIで振り分け'}
             </button>
+            <button
+              className="btn btn-outline"
+              style={{ flex: 1, borderColor: color, color, borderStyle: 'dashed' }}
+              onClick={addItem}
+            >
+              ＋ 項目を追加
+            </button>
           </div>
-
-          <button
-            className="btn btn-outline"
-            style={{ marginTop: 16, borderColor: color, color, borderStyle: 'dashed' }}
-            onClick={addItem}
-          >
-            ＋ 項目を追加（手動）
-          </button>
 
           {/* 写真 */}
           <p style={{ fontSize: 15, fontWeight: 700, marginTop: 24, marginBottom: 10 }}>📷 写真</p>
