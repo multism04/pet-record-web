@@ -55,7 +55,9 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
   const [analyzing, setAnalyzing] = useState(false);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const libraryInputRef = useRef<HTMLInputElement>(null);
 
   // 日付が変わったら、その日付の記録項目を読み直す（写真と同じ挙動に揃える）
   useEffect(() => {
@@ -378,7 +380,7 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
               </div>
             ))}
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => setPhotoMenuOpen(true)}
               style={{
                 width: 90,
                 height: 90,
@@ -394,8 +396,18 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
             >
               ＋
             </button>
+            {/* カメラ用：capture でモバイルのカメラを直接起動 */}
             <input
-              ref={fileInputRef}
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: 'none' }}
+              onChange={onPickPhoto}
+            />
+            {/* アルバム用：既存の写真から選ぶ */}
+            <input
+              ref={libraryInputRef}
               type="file"
               accept="image/*"
               style={{ display: 'none' }}
@@ -414,6 +426,60 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
         initialIndex={viewerIndex ?? 0}
         onClose={() => setViewerIndex(null)}
       />
+
+      {/* 写真の追加方法を選ぶメニュー（カメラ / アルバム） */}
+      {photoMenuOpen && (
+        <div
+          onClick={() => setPhotoMenuOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'flex-end',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              background: '#fff',
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              padding: 12,
+              paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}
+          >
+            <button
+              className="btn"
+              style={{ background: color }}
+              onClick={() => {
+                setPhotoMenuOpen(false);
+                cameraInputRef.current?.click();
+              }}
+            >
+              📷 カメラで撮影
+            </button>
+            <button
+              className="btn"
+              style={{ background: color }}
+              onClick={() => {
+                setPhotoMenuOpen(false);
+                libraryInputRef.current?.click();
+              }}
+            >
+              🖼 アルバムから選ぶ
+            </button>
+            <button className="btn btn-secondary" onClick={() => setPhotoMenuOpen(false)}>
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
