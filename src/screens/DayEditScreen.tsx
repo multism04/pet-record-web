@@ -39,10 +39,6 @@ function isNumericCat(category: string): boolean {
 function unitOf(category: string): string {
   return RECORD_CATEGORIES.find((c) => c.key === category)?.unit ?? '';
 }
-function isMultipleCat(category: string): boolean {
-  return RECORD_CATEGORIES.find((c) => c.key === category)?.multiple ?? false;
-}
-
 let tempKey = -1;
 
 export default function DayEditScreen({ petId, petName, color, date: initialDate, onSaved, onCancel }: Props) {
@@ -148,25 +144,11 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
         return;
       }
 
+      // 既存項目は書き換えず、常に新しい項目として追加する（過去の記録が消えないように）
       setItems((prev) => {
         const next = [...prev];
         for (const f of parsedFields) {
-          if (isMultipleCat(f.category)) {
-            next.push(makeItem(f.category, f.text, f.numeric));
-            continue;
-          }
-          const idx = next.findIndex((it) => it.category === f.category);
-          if (idx >= 0) {
-            const cur = next[idx];
-            if (isNumericCat(f.category)) {
-              next[idx] = { ...cur, numeric: f.numeric };
-            } else {
-              const merged = cur.text.trim() ? `${cur.text.trim()} ${f.text}` : f.text;
-              next[idx] = { ...cur, text: merged };
-            }
-          } else {
-            next.push(makeItem(f.category, f.text, f.numeric));
-          }
+          next.push(makeItem(f.category, f.text, f.numeric));
         }
         return next;
       });
