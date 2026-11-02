@@ -10,6 +10,7 @@ import {
   deleteRecord,
   getPhotosByDate,
   getRecordsByDate,
+  moveDay,
   updateRecord,
 } from '../db';
 import { readFileAsDataUrl } from '../photos';
@@ -52,6 +53,8 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveTarget, setMoveTarget] = useState('');
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
 
@@ -165,35 +168,63 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
     }
   }
 
+  // 編集中の内容を保存してから、この日の記録・写真を別の日へ移す
+  async function handleMove() {
+    if (!moveTarget || moveTarget === date) {
+      alert('移動先の日付を、今の日付と別の日にしてください。');
+      return;
+    }
+    try {
+      setSaving(true);
+      const existing =
+        (await getRecordsByDate(petId, moveTarget)).length + (await getPhotosByDate(petId, moveTarget)).length;
+      const msg = existing > 0
+        ? `${formatDateLabel(moveTarget)}にはすでに記録があります。\n${formatDateLabel(date)}の記録を合体して移動しますか？`
+        : `${formatDateLabel(date)}の記録と写真を${formatDateLabel(moveTarget)}に移動しますか？`;
+      if (!confirm(msg)) return;
+      await saveItems();
+      await moveDay(petId, date, moveTarget);
+      onSaved();
+    } catch (e) {
+      alert(`移動に失敗しました: ${String(e)}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveItems() {
+    for (const id of removedIds) {
+      await deleteRecord(id);
+    }
+    for (const it of items) {
+      const numeric = isNumericCat(it.category);
+      if (numeric) {
+        if (it.numeric.trim() === '') continue;
+      } else {
+        if (it.text.trim() === '') continue;
+      }
+      const numericValue = numeric ? parseFloat(it.numeric) : null;
+      if (numeric && (numericValue === null || isNaN(numericValue))) continue;
+      const input = {
+        pet_id: petId,
+        date,
+        category: it.category,
+        text_value: numeric ? null : it.text.trim(),
+        numeric_value: numericValue,
+        unit: numeric ? it.unit.trim() || null : null,
+      };
+      if (it.id != null) {
+        await updateRecord(it.id, input);
+      } else {
+        await addRecord(input);
+      }
+    }
+  }
+
   async function handleSave() {
     try {
       setSaving(true);
-      for (const id of removedIds) {
-        await deleteRecord(id);
-      }
-      for (const it of items) {
-        const numeric = isNumericCat(it.category);
-        if (numeric) {
-          if (it.numeric.trim() === '') continue;
-        } else {
-          if (it.text.trim() === '') continue;
-        }
-        const numericValue = numeric ? parseFloat(it.numeric) : null;
-        if (numeric && (numericValue === null || isNaN(numericValue))) continue;
-        const input = {
-          pet_id: petId,
-          date,
-          category: it.category,
-          text_value: numeric ? null : it.text.trim(),
-          numeric_value: numericValue,
-          unit: numeric ? it.unit.trim() || null : null,
-        };
-        if (it.id != null) {
-          await updateRecord(it.id, input);
-        } else {
-          await addRecord(input);
-        }
-      }
+      await saveItems();
       onSaved();
     } catch (e) {
       alert(`保存に失敗しました: ${String(e)}`);
@@ -220,7 +251,7 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
         <div className="screen-pad">
           <p style={{ fontSize: 16, fontWeight: 600, color, margin: '0 0 4px' }}>🐾 {petName}</p>
 
-          <p className="field-label">日付</p>
+          <p className="field-label">表示する日付</p>
           <DateField value={date} onChange={(v) => setDate(v || todayYmd())} />
           <p style={{ fontSize: 13, color: '#888', marginTop: 6 }}>{formatDateLabel(date)}</p>
 
@@ -399,6 +430,48 @@ export default function DayEditScreen({ petId, petName, color, date: initialDate
           <p style={{ fontSize: 11, color: '#aaa', marginTop: 8 }}>
             写真の追加・削除はその場で保存されます。タップで拡大表示できます。
           </p>
+
+          {/* 日付を間違えた時用：この日の記録・写真をまとめて別の日へ移す */}
+          <div style={{ marginTop: 28, paddingTop: 16, borderTop: '1px solid #e5e5e5' }}>
+            {!moveOpen ? (
+              <button
+                className="btn btn-outline"
+                style={{ borderColor: color, color }}
+                onClick={() => {
+                  setMoveTarget(date);
+                  setMoveOpen(true);
+                }}
+              >
+                📅 この日の記録を別の日に移動
+              </button>
+            ) : (
+              <div style={{ padding: 14, background: '#f4f4f4', borderRadius: 12 }}>
+                <p style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>📅 移動先の日付</p>
+                <p style={{ fontSize: 12, color: '#888', margin: '4px 0 10px' }}>
+                  {formatDateLabel(date)}の記録と写真を、選んだ日にまとめて移します。編集中の内容も保存されます。
+                </p>
+                <input
+                  type="date"
+                  className="text-input"
+                  value={moveTarget}
+                  onChange={(e) => setMoveTarget(e.target.value)}
+                />
+                <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+                  <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setMoveOpen(false)}>
+                    やめる
+                  </button>
+                  <button
+                    className="btn"
+                    style={{ flex: 1, background: color, opacity: saving ? 0.6 : 1 }}
+                    onClick={handleMove}
+                    disabled={saving}
+                  >
+                    移動する
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

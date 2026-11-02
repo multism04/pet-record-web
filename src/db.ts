@@ -232,6 +232,17 @@ export async function deletePhoto(id: number): Promise<void> {
   await wrap(s.delete(id));
 }
 
+// 指定日の記録と写真をまとめて別の日付へ移す（移動先に既にある分はそのまま残り、合体する）
+export async function moveDay(petId: number, fromDate: string, toDate: string): Promise<void> {
+  if (fromDate === toDate) return;
+  const recs = (await getAllRecordsForPet(petId)).filter((r) => r.date === fromDate);
+  const photos = (await getAllPhotosForPet(petId)).filter((p) => p.date === fromDate);
+  const rs = await store('records', 'readwrite');
+  await Promise.all(recs.map((r) => wrap(rs.put({ ...r, date: toDate }))));
+  const ps = await store('photos', 'readwrite');
+  await Promise.all(photos.map((p) => wrap(ps.put({ ...p, date: toDate }))));
+}
+
 // ---- バックアップ／復元用 ----
 
 export async function getAllRecords(): Promise<Record[]> {
