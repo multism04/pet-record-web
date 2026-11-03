@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
+import BackupBanner from './components/BackupBanner';
 import { DEFAULT_COLOR } from './constants';
 import { getDefaultPetId, getPets, initDb, setDefaultPetId } from './db';
 import CalendarScreen from './screens/CalendarScreen';
@@ -58,6 +59,8 @@ export default function App() {
     (async () => {
       try {
         await initDb();
+        // ブラウザによるサイトデータの自動削除を受けにくくする（許可されるかはブラウザ次第）
+        void navigator.storage?.persist?.();
         await reloadPets();
       } catch (e) {
         setError(String(e));
@@ -141,6 +144,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <BackupBanner refreshKey={`${recordsVersion}:${pets.length}:${overlay}`} hasData={pets.length > 0} />
       <div className="app-body">
         {tab === 'calendar' && (
           <CalendarScreen

@@ -11,6 +11,7 @@ import {
   getAllRecords,
   getDefaultPetId,
   getPets,
+  markBackedUp,
   setDefaultPetId,
 } from './db';
 import { dataUrlToB64, b64ToDataUrl } from './photos';
@@ -36,7 +37,9 @@ type BackupData = {
   photos: { pet_id: number; date: string; b64: string; ext: string }[];
 };
 
-export async function exportBackup(): Promise<void> {
+// 戻り値: バックアップが保存された（または端末に書き出された）なら true、共有をキャンセルしたなら false
+export async function exportBackup(): Promise<boolean> {
+  const startedAt = new Date().toISOString();
   const pets = await getPets();
   const records = await getAllRecords();
   const photos = await getAllPhotos();
@@ -76,15 +79,33 @@ export async function exportBackup(): Promise<void> {
   };
 
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  const fileName = `wagako_backup_${stamp}.json`;
+  const json = JSON.stringify(data);
+  const blob = new Blob([json], { type: 'application/json' });
+
+  // スマホでは共有シートから Googleドライブ等へ直接保存できる（端末内のダウンロードだけだと端末ごと失うため）
+  const file = new File([blob], fileName, { type: 'application/json' });
+  if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: fileName });
+      await markBackedUp(startedAt);
+      return true;
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return false;
+      // 共有に失敗したときはダウンロードにフォールバックする
+    }
+  }
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `wagako_backup_${stamp}.json`;
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+  await markBackedUp(startedAt);
+  return true;
 }
 
 export async function importBackupFromFile(

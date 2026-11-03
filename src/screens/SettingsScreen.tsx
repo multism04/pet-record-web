@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_GEMINI_MODEL, MODEL_SETTING, listAvailableModels } from '../ai';
 import { exportBackup, importBackupFromFile } from '../backup';
 import { APP_VERSION, DEFAULT_COLOR } from '../constants';
-import { getSetting, setSetting } from '../db';
+import { getBackupStatus, getSetting, setSetting } from '../db';
 import { getApiKey, setApiKey as saveApiKey } from '../secure';
 
 type Props = {
@@ -18,11 +18,15 @@ export default function SettingsScreen({ onClose, onDataRestored }: Props) {
   const [checking, setChecking] = useState(false);
   const [busy, setBusy] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
+  const [persisted, setPersisted] = useState<boolean | null>(null);
 
   useEffect(() => {
     (async () => {
       setApiKey((await getApiKey()) ?? '');
       setModel((await getSetting(MODEL_SETTING)) ?? DEFAULT_GEMINI_MODEL);
+      setLastBackupAt((await getBackupStatus()).lastBackupAt);
+      setPersisted((await navigator.storage?.persisted?.()) ?? null);
       setLoaded(true);
     })();
   }, []);
@@ -31,6 +35,7 @@ export default function SettingsScreen({ onClose, onDataRestored }: Props) {
     try {
       setBusy(true);
       await exportBackup();
+      setLastBackupAt((await getBackupStatus()).lastBackupAt);
     } catch (e) {
       alert(`バックアップに失敗しました: ${String(e)}`);
     } finally {
@@ -170,6 +175,18 @@ export default function SettingsScreen({ onClose, onDataRestored }: Props) {
             <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>データのバックアップ</p>
             <p style={{ fontSize: 13, color: '#666', lineHeight: 1.6, marginBottom: 12 }}>
               全データ（ペット・記録・写真）を1つのファイルに書き出せます。スマホ版アプリで書き出したバックアップも、ここから読み込めます。
+            </p>
+            <p style={{ fontSize: 13, color: '#333', marginBottom: 4 }}>
+              前回のバックアップ:{' '}
+              {lastBackupAt ? new Date(lastBackupAt).toLocaleString('ja-JP') : 'まだありません'}
+            </p>
+            <p style={{ fontSize: 13, color: '#333', marginBottom: 12 }}>
+              端末の自動削除からの保護:{' '}
+              {persisted === null ? '不明' : persisted ? '有効' : '無効（ブラウザが許可していません）'}
+            </p>
+            <p style={{ fontSize: 12, color: '#999', lineHeight: 1.6, marginBottom: 12 }}>
+              記録はこの端末のブラウザ内にだけ保存されます。ブラウザの操作や端末の事情で消えることがあるため、
+              「バックアップを書き出す」で出る共有メニューからGoogleドライブなどに保存しておくと安心です。
             </p>
             <button
               className="btn"
