@@ -16,6 +16,7 @@ import {
 } from './db';
 import { dataUrlToB64, b64ToDataUrl } from './photos';
 import type { Pet } from './types';
+import { todayYmd } from './utils';
 
 const BACKUP_VERSION = 1;
 
@@ -78,7 +79,8 @@ export async function exportBackup(): Promise<boolean> {
     photos: backupPhotos,
   };
 
-  const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  // 端末の時刻（日本時間）の日付にする。toISOString はUTCなので朝9時前に前日の日付になってしまう
+  const stamp = todayYmd().replace(/-/g, '');
   const fileName = `wagako_backup_${stamp}.json`;
   const json = JSON.stringify(data);
   const blob = new Blob([json], { type: 'application/json' });

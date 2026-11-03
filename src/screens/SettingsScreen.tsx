@@ -207,7 +207,7 @@ export default function SettingsScreen({ onClose, onDataRestored }: Props) {
             <input
               ref={importInputRef}
               type="file"
-              accept="application/json"
+              accept=".json,application/json"
               style={{ display: 'none' }}
               onChange={handleImportFile}
             />

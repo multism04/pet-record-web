@@ -1,6 +1,6 @@
 // アプリ全体で使う定数（pet-record-app（スマホ版）と同じ内容）
 
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = '1.1.1';
 
 // 登録できるペットの上限
 export const MAX_PETS = 5;
