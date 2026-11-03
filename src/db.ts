@@ -44,7 +44,14 @@ function wrap<T>(req: IDBRequest<T>): Promise<T> {
 
 async function store(name: string, mode: IDBTransactionMode): Promise<IDBObjectStore> {
   const db = await openDb();
-  return db.transaction(name, mode).objectStore(name);
+  const tx = db.transaction(name, mode);
+  // データ本体（meta以外）を書き換える操作は「未バックアップの変更あり」の目印を残す
+  if (mode === 'readwrite' && name !== 'meta') {
+    tx.oncomplete = () => {
+      void markChanged();
+    };
+  }
+  return tx.objectStore(name);
 }
 
 export async function initDb(): Promise<void> {
@@ -299,4 +306,31 @@ export async function getDefaultPetId(): Promise<number | null> {
 
 export async function setDefaultPetId(id: number | null): Promise<void> {
   await setSetting(DEFAULT_PET_KEY, id === null ? null : String(id));
+}
+
+// ---- バックアップ状態（最終変更／最終バックアップの時刻） ----
+
+const LAST_CHANGED_KEY = 'last_changed_at';
+const LAST_BACKUP_KEY = 'last_backup_at';
+
+async function markChanged(): Promise<void> {
+  await setSetting(LAST_CHANGED_KEY, new Date().toISOString());
+}
+
+// at: バックアップの読み出しを始めた時刻。読み出し中に入った変更を「バックアップ済み」と誤認しないため。
+export async function markBackedUp(at: string): Promise<void> {
+  await setSetting(LAST_BACKUP_KEY, at);
+}
+
+export type BackupStatus = {
+  lastBackupAt: string | null;
+  // 最後のバックアップ以降に変更があるか（バックアップが一度もなく、データがある場合も true）
+  dirty: boolean;
+};
+
+export async function getBackupStatus(): Promise<BackupStatus> {
+  const changed = await getSetting(LAST_CHANGED_KEY);
+  const backup = await getSetting(LAST_BACKUP_KEY);
+  const dirty = changed !== null && (backup === null || changed > backup);
+  return { lastBackupAt: backup, dirty };
 }
